@@ -1,0 +1,22 @@
+{
+  "name": "content-agent",
+  "version": "1.0.0",
+  "description": "Telegram webhook agent that generates multimodal content via Claude, Nano Banana, HeyGen, and Google Drive",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "node --test"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.94.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "googleapis": "^171.4.0",
+    "node-fetch": "^3.3.2"
+  }
+}
