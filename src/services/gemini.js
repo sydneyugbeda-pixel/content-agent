@@ -1,6 +1,6 @@
 // Google Gemini image generation: produces carousel slide images from Claude's image prompts
 
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent';
+const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent';
 
 export async function generateCarouselSlides(slidesArray) {
   console.log(`[gemini] Generating ${slidesArray.length} carousel slides sequentially...`);

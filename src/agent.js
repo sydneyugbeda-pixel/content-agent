@@ -92,10 +92,15 @@ export async function handleUpdate(telegramUpdate) {
     // Step 6 — Send Drive link back to user
     const slidesCount = slides.filter((s) => s.image_data).length;
     const videoStatus = videoUrl ? 'Ready' : 'Processing failed';
+    const firstSlideError = slides.find((s) => s.error)?.error ?? null;
+
+    const slideNote = slidesCount === 0 && firstSlideError
+      ? `📊 Slides: 0/5 — error: ${firstSlideError.slice(0, 120)}`
+      : `📊 Slides: ${slidesCount}/5 generated`;
 
     await sendTelegramMessage(
       chatId,
-      `✅ Content batch ready!\n\n📁 <a href="https://drive.google.com/drive/folders/${folderId}">View in Google Drive</a>\n\n📊 Slides: ${slidesCount}/5 generated\n🎬 Video: ${videoStatus}`
+      `✅ Content batch ready!\n\n📁 <a href="https://drive.google.com/drive/folders/${folderId}">View in Google Drive</a>\n\n${slideNote}\n🎬 Video: ${videoStatus}`
     );
 
     console.log(`[agent] Pipeline complete for chat ${chatId}.`);
