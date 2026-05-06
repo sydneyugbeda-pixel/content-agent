@@ -57,7 +57,7 @@ export async function generateContent(userText, imageBase64 = null) {
 
     console.log('[claude] Sending request to Claude API...');
     const response = await client.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-5',
       max_tokens: 3000,
       system: SYSTEM_PROMPT,
       messages: [{ role: 'user', content: contentBlocks }],
