@@ -9,21 +9,18 @@ app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
 app.get('/debug-drive', async (_req, res) => {
   const { google } = await import('googleapis');
-  const key = (process.env.GOOGLE_PRIVATE_KEY || '').replace(/\\n/g, '\n');
-  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || '';
-  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID || '';
-
   const info = {
-    email_set: Boolean(email),
-    key_length: key.length,
-    key_starts_correctly: key.startsWith('-----BEGIN'),
-    folder_id_set: Boolean(folderId),
+    client_id_set: Boolean(process.env.GOOGLE_CLIENT_ID),
+    client_secret_set: Boolean(process.env.GOOGLE_CLIENT_SECRET),
+    refresh_token_set: Boolean(process.env.GOOGLE_REFRESH_TOKEN),
+    folder_id_set: Boolean(process.env.GOOGLE_DRIVE_FOLDER_ID),
     token_obtained: false,
     error: null,
   };
 
   try {
-    const auth = new google.auth.JWT({ email, key, scopes: ['https://www.googleapis.com/auth/drive'] });
+    const auth = new google.auth.OAuth2(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);
+    auth.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN });
     const token = await auth.getAccessToken();
     info.token_obtained = Boolean(token?.token);
   } catch (err) {

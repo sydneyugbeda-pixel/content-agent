@@ -1,25 +1,16 @@
-// Google Drive integration: creates folders and uploads text files and images via service account JWT auth
+// Google Drive integration: creates folders and uploads files via OAuth2 user credentials
 
 import { google } from 'googleapis';
 import { Readable } from 'stream';
 
-function parsePrivateKey(raw = '') {
-  // Handle both literal \n (from Railway/env files) and real newlines
-  return raw.replace(/\\n/g, '\n');
-}
+const oauth2Client = new google.auth.OAuth2(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET
+);
 
-const serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
-const privateKey = parsePrivateKey(process.env.GOOGLE_PRIVATE_KEY);
+oauth2Client.setCredentials({ refresh_token: process.env.GOOGLE_REFRESH_TOKEN });
 
-console.log(`[drive] Auth init — email set: ${Boolean(serviceAccountEmail)}, key length: ${privateKey.length}, key starts correctly: ${privateKey.startsWith('-----BEGIN')}`);
-
-const auth = new google.auth.JWT({
-  email: serviceAccountEmail,
-  key: privateKey,
-  scopes: ['https://www.googleapis.com/auth/drive'],
-});
-
-const drive = google.drive({ version: 'v3', auth });
+const drive = google.drive({ version: 'v3', auth: oauth2Client });
 
 export async function createContentFolder(name, parentFolderId) {
   try {
