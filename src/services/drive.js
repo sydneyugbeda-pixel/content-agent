@@ -3,10 +3,20 @@
 import { google } from 'googleapis';
 import { Readable } from 'stream';
 
+function parsePrivateKey(raw = '') {
+  // Handle both literal \n (from Railway/env files) and real newlines
+  return raw.replace(/\\n/g, '\n');
+}
+
+const serviceAccountEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
+const privateKey = parsePrivateKey(process.env.GOOGLE_PRIVATE_KEY);
+
+console.log(`[drive] Auth init — email set: ${Boolean(serviceAccountEmail)}, key length: ${privateKey.length}, key starts correctly: ${privateKey.startsWith('-----BEGIN')}`);
+
 const auth = new google.auth.JWT(
-  process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+  serviceAccountEmail,
   null,
-  process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+  privateKey,
   ['https://www.googleapis.com/auth/drive']
 );
 
