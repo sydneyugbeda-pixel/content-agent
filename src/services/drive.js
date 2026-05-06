@@ -13,12 +13,11 @@ const privateKey = parsePrivateKey(process.env.GOOGLE_PRIVATE_KEY);
 
 console.log(`[drive] Auth init — email set: ${Boolean(serviceAccountEmail)}, key length: ${privateKey.length}, key starts correctly: ${privateKey.startsWith('-----BEGIN')}`);
 
-const auth = new google.auth.JWT(
-  serviceAccountEmail,
-  null,
-  privateKey,
-  ['https://www.googleapis.com/auth/drive']
-);
+const auth = new google.auth.JWT({
+  email: serviceAccountEmail,
+  key: privateKey,
+  scopes: ['https://www.googleapis.com/auth/drive'],
+});
 
 const drive = google.drive({ version: 'v3', auth });
 

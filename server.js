@@ -23,7 +23,7 @@ app.get('/debug-drive', async (_req, res) => {
   };
 
   try {
-    const auth = new google.auth.JWT(email, null, key, ['https://www.googleapis.com/auth/drive']);
+    const auth = new google.auth.JWT({ email, key, scopes: ['https://www.googleapis.com/auth/drive'] });
     const token = await auth.getAccessToken();
     info.token_obtained = Boolean(token?.token);
   } catch (err) {
