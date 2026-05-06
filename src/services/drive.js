@@ -54,6 +54,25 @@ export async function uploadTextFile(content, filename, folderId) {
   }
 }
 
+export async function uploadImageFromBase64(base64Data, mimeType, filename, folderId) {
+  try {
+    console.log(`[drive] Uploading base64 image: "${filename}"`);
+    const buffer = Buffer.from(base64Data, 'base64');
+    const stream = Readable.from(buffer);
+
+    const response = await drive.files.create({
+      requestBody: { name: filename, parents: [folderId] },
+      media: { mimeType, body: stream },
+      fields: 'id',
+    });
+    const fileId = response.data.id;
+    console.log(`[drive] Uploaded "${filename}" with ID: ${fileId}`);
+    return fileId;
+  } catch (err) {
+    throw new Error(`[drive] uploadImageFromBase64 "${filename}" failed: ${err.message}`);
+  }
+}
+
 export async function uploadImageFromUrl(imageUrl, filename, folderId) {
   try {
     console.log(`[drive] Fetching image for upload: "${filename}" from ${imageUrl}`);

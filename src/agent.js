@@ -1,10 +1,10 @@
-// Orchestrates the full content pipeline: Telegram → Claude → Nano Banana + HeyGen → Drive → Telegram reply
+// Orchestrates the full content pipeline: Telegram → Claude → Gemini + HeyGen → Drive → Telegram reply
 
 import { downloadTelegramFile, sendTelegramMessage } from './services/telegram.js';
 import { generateContent } from './services/claude.js';
-import { generateCarouselSlides } from './services/nanoBanana.js';
+import { generateCarouselSlides } from './services/gemini.js';
 import { generateAvatarVideo } from './services/heyGen.js';
-import { createContentFolder, uploadTextFile, uploadImageFromUrl } from './services/drive.js';
+import { createContentFolder, uploadTextFile, uploadImageFromBase64 } from './services/drive.js';
 import { formatContentFile } from './utils/parseContent.js';
 
 export async function handleUpdate(telegramUpdate) {
@@ -36,8 +36,8 @@ export async function handleUpdate(telegramUpdate) {
     const avatarId = process.env.HEYGEN_AVATAR_ID;
     const voiceId = process.env.HEYGEN_VOICE_ID;
 
-    // Step 3 — Run Nano Banana and HeyGen in parallel
-    console.log('[agent] Starting Nano Banana and HeyGen in parallel...');
+    // Step 3 — Run Gemini image generation and HeyGen in parallel
+    console.log('[agent] Starting Gemini and HeyGen in parallel...');
     const [slidesResult, videoResult] = await Promise.allSettled([
       generateCarouselSlides(content.carousel_slides),
       generateAvatarVideo(content.youtube_short_script, avatarId, voiceId),
@@ -46,14 +46,14 @@ export async function handleUpdate(telegramUpdate) {
     const slides =
       slidesResult.status === 'fulfilled'
         ? slidesResult.value
-        : (console.error('[agent] Nano Banana failed:', slidesResult.reason), []);
+        : (console.error('[agent] Gemini slides failed:', slidesResult.reason), []);
 
     const videoUrl =
       videoResult.status === 'fulfilled'
         ? videoResult.value
         : (console.error('[agent] HeyGen failed:', videoResult.reason), null);
 
-    console.log(`[agent] Slides result: ${slides.filter((s) => s.image_url).length}/${content.carousel_slides.length} generated`);
+    console.log(`[agent] Slides result: ${slides.filter((s) => s.image_data).length}/${content.carousel_slides.length} generated`);
     console.log(`[agent] Video result: ${videoUrl ? videoUrl : 'not available'}`);
 
     // Step 4 — Create Drive folder
@@ -64,18 +64,16 @@ export async function handleUpdate(telegramUpdate) {
       .replace(/[^a-zA-Z0-9_]/g, '');
     const folderName = `Content_${dateStr}_${topicSlug}`;
 
-    const folderId = await createContentFolder(
-      folderName,
-      process.env.GOOGLE_DRIVE_FOLDER_ID
-    );
+    const folderId = await createContentFolder(folderName, process.env.GOOGLE_DRIVE_FOLDER_ID);
 
     // Step 5 — Upload all assets to Drive
     const contentCopy = formatContentFile(content);
     await uploadTextFile(contentCopy, 'content_copy.txt', folderId);
 
     for (const slide of slides) {
-      if (slide.image_url) {
-        await uploadImageFromUrl(slide.image_url, `slide_${slide.slide}.png`, folderId);
+      if (slide.image_data) {
+        const ext = slide.mime_type === 'image/jpeg' ? 'jpg' : 'png';
+        await uploadImageFromBase64(slide.image_data, slide.mime_type, `slide_${slide.slide}.${ext}`, folderId);
       }
     }
 
@@ -92,7 +90,7 @@ export async function handleUpdate(telegramUpdate) {
     console.log(`[agent] All assets uploaded to Drive folder: ${folderId}`);
 
     // Step 6 — Send Drive link back to user
-    const slidesCount = slides.filter((s) => s.image_url).length;
+    const slidesCount = slides.filter((s) => s.image_data).length;
     const videoStatus = videoUrl ? 'Ready' : 'Processing failed';
 
     await sendTelegramMessage(
