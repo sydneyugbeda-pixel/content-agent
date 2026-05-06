@@ -1,21 +1,24 @@
-// Google Gemini image generation: produces carousel slide images from Claude's image prompts
+// Google Imagen 3 image generation: produces carousel slide images from Claude's image prompts
 
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-preview-image-generation:generateContent';
+const IMAGEN_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict';
 
 export async function generateCarouselSlides(slidesArray) {
-  console.log(`[gemini] Generating ${slidesArray.length} carousel slides sequentially...`);
+  console.log(`[gemini] Generating ${slidesArray.length} carousel slides with Imagen 3...`);
   const results = [];
 
   for (const slide of slidesArray) {
     try {
       console.log(`[gemini] Generating slide ${slide.slide} (${slide.type})...`);
 
-      const res = await fetch(`${GEMINI_API_URL}?key=${process.env.GEMINI_API_KEY}`, {
+      const res = await fetch(`${IMAGEN_API_URL}?key=${process.env.GEMINI_API_KEY}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: slide.image_prompt }] }],
-          generationConfig: { responseModalities: ['IMAGE'] },
+          instances: [{ prompt: slide.image_prompt }],
+          parameters: {
+            sampleCount: 1,
+            aspectRatio: '1:1',
+          },
         }),
       });
 
@@ -25,18 +28,17 @@ export async function generateCarouselSlides(slidesArray) {
       }
 
       const data = await res.json();
-      const parts = data.candidates?.[0]?.content?.parts ?? [];
-      const imagePart = parts.find((p) => p.inlineData?.mimeType?.startsWith('image/'));
+      const prediction = data.predictions?.[0];
 
-      if (!imagePart) {
+      if (!prediction?.bytesBase64Encoded) {
         throw new Error(`No image in response: ${JSON.stringify(data).slice(0, 200)}`);
       }
 
-      console.log(`[gemini] Slide ${slide.slide} generated (${imagePart.inlineData.mimeType})`);
+      console.log(`[gemini] Slide ${slide.slide} generated (${prediction.mimeType ?? 'image/png'})`);
       results.push({
         slide: slide.slide,
-        image_data: imagePart.inlineData.data,
-        mime_type: imagePart.inlineData.mimeType,
+        image_data: prediction.bytesBase64Encoded,
+        mime_type: prediction.mimeType ?? 'image/png',
         prompt: slide.image_prompt,
       });
     } catch (err) {
