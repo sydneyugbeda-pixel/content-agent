@@ -8,25 +8,29 @@ app.use(express.json());
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
 app.get('/debug-drive', async (_req, res) => {
-  try {
-    const { google } = await import('googleapis');
-    const key = (process.env.GOOGLE_PRIVATE_KEY || '').replace(/\\n/g, '\n');
-    const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || '';
-    const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID || '';
+  const { google } = await import('googleapis');
+  const key = (process.env.GOOGLE_PRIVATE_KEY || '').replace(/\\n/g, '\n');
+  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL || '';
+  const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID || '';
 
+  const info = {
+    email_set: Boolean(email),
+    key_length: key.length,
+    key_starts_correctly: key.startsWith('-----BEGIN'),
+    folder_id_set: Boolean(folderId),
+    token_obtained: false,
+    error: null,
+  };
+
+  try {
     const auth = new google.auth.JWT(email, null, key, ['https://www.googleapis.com/auth/drive']);
     const token = await auth.getAccessToken();
-
-    res.json({
-      email_set: Boolean(email),
-      key_length: key.length,
-      key_starts_correctly: key.startsWith('-----BEGIN'),
-      folder_id_set: Boolean(folderId),
-      token_obtained: Boolean(token?.token),
-    });
+    info.token_obtained = Boolean(token?.token);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    info.error = err.message;
   }
+
+  res.json(info);
 });
 
 app.post('/webhook', (req, res) => {
