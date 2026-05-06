@@ -63,7 +63,7 @@ export async function generateContent(userText, imageBase64 = null) {
       messages: [{ role: 'user', content: contentBlocks }],
     });
 
-    const rawText = response.content[0].text.trim();
+    const rawText = response.content[0].text.trim().replace(/^```json\s*/i, '').replace(/```\s*$/, '').trim();
     console.log('[claude] Response received, parsing JSON...');
 
     let parsed;
